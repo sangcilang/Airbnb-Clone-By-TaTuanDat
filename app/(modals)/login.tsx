@@ -1,19 +1,32 @@
 import Colors from '@/constants/Colors';
-import { useOAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { View, StyleSheet, TextInput, Text, TouchableOpacity } from 'react-native';
 
-// https://github.com/clerkinc/clerk-expo-starter/blob/main/components/OAuth.tsx
-import { useWarmUpBrowser } from '@/hooks/useWarmUpBrowser';
 import { defaultStyles } from '@/constants/Styles';
+
+const HAS_VALID_CLERK_KEY = /^pk_(test|live)_[A-Za-z0-9]+$/.test(
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
+);
 
 enum Strategy {
   Google = 'oauth_google',
   Apple = 'oauth_apple',
   Facebook = 'oauth_facebook',
 }
+
 const Page = () => {
+  if (!HAS_VALID_CLERK_KEY) {
+    return <LoginUnavailable />;
+  }
+
+  return <LoginWithClerk />;
+};
+
+const LoginWithClerk = () => {
+  // https://github.com/clerkinc/clerk-expo-starter/blob/main/components/OAuth.tsx
+  const { useWarmUpBrowser } = require('@/hooks/useWarmUpBrowser');
+  const { useOAuth } = require('@clerk/clerk-expo');
   useWarmUpBrowser();
 
   const router = useRouter();
@@ -95,6 +108,17 @@ const Page = () => {
   );
 };
 
+const LoginUnavailable = () => {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Auth is disabled for web UI testing</Text>
+      <Text style={styles.description}>
+        Add a valid `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` to test the login flow.
+      </Text>
+    </View>
+  );
+};
+
 export default Page;
 
 const styles = StyleSheet.create({
@@ -103,7 +127,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 26,
   },
-
+  title: {
+    fontFamily: 'mon-b',
+    fontSize: 24,
+    marginBottom: 12,
+  },
+  description: {
+    fontFamily: 'mon',
+    fontSize: 16,
+    color: Colors.grey,
+    lineHeight: 24,
+  },
   seperatorView: {
     flexDirection: 'row',
     gap: 10,

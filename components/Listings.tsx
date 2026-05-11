@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ListRenderItem, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ListRenderItem, TouchableOpacity, FlatList, Platform } from 'react-native';
 import { defaultStyles } from '@/constants/Styles';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
@@ -64,12 +64,22 @@ const Listings = ({ listings: items, refresh, category }: Props) => {
 
   return (
     <View style={defaultStyles.container}>
-      <BottomSheetFlatList
-        renderItem={renderRow}
-        data={loading ? [] : items}
-        ref={listRef}
-        ListHeaderComponent={<Text style={styles.info}>{items.length} homes</Text>}
-      />
+      {Platform.OS === 'web' ? (
+        <FlatList
+          renderItem={renderRow}
+          data={loading ? [] : items}
+          keyExtractor={(item) => `${item.id}`}
+          contentContainerStyle={styles.webListContent}
+          ListHeaderComponent={<Text style={styles.info}>{items.length} homes</Text>}
+        />
+      ) : (
+        <BottomSheetFlatList
+          renderItem={renderRow}
+          data={loading ? [] : items}
+          ref={listRef}
+          ListHeaderComponent={<Text style={styles.info}>{items.length} homes</Text>}
+        />
+      )}
     </View>
   );
 };
@@ -90,6 +100,9 @@ const styles = StyleSheet.create({
     fontFamily: 'mon-sb',
     fontSize: 16,
     marginTop: 4,
+  },
+  webListContent: {
+    paddingBottom: 140,
   },
 });
 

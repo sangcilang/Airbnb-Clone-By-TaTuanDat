@@ -56,6 +56,12 @@ const Layout = () => {
           ),
         }}
       />
+      <Tabs.Screen
+        name="profile.web"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 };

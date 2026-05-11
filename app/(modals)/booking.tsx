@@ -1,18 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, Image, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Platform, TouchableOpacity, TextInput } from 'react-native';
 import { useState } from 'react';
-import Animated, { FadeIn, FadeOut, SlideInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { TextInput } from 'react-native-gesture-handler';
-import { TouchableOpacity } from '@gorhom/bottom-sheet';
 import { defaultStyles } from '@/constants/Styles';
 import Colors from '@/constants/Colors';
 import { places } from '@/assets/data/places';
 import { useRouter } from 'expo-router';
-// @ts-ignore
-import DatePicker from 'react-native-modern-datepicker';
-
-const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 const guestsGropus = [
   {
@@ -38,9 +30,137 @@ const guestsGropus = [
 ];
 
 const Page = () => {
+  if (Platform.OS === 'web') {
+    return <BookingWebPage />;
+  }
+
+  return <BookingNativePage />;
+};
+
+const BookingWebPage = () => {
+  const [selectedPlace, setSelectedPlace] = useState(0);
+  const [groups, setGroups] = useState(guestsGropus);
+  const router = useRouter();
+
+  return (
+    <View style={[styles.container, { backgroundColor: '#F7F7F7' }]}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Where to?</Text>
+          <View style={styles.cardBody}>
+            <View style={styles.searchSection}>
+              <Ionicons style={styles.searchIcon} name="ios-search" size={20} color="#000" />
+              <TextInput
+                style={styles.inputField}
+                placeholder="Search destinations"
+                placeholderTextColor={Colors.grey}
+              />
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.placesContainer}>
+              {places.map((item, index) => (
+                <TouchableOpacity onPress={() => setSelectedPlace(index)} key={index}>
+                  <Image
+                    source={item.img}
+                    style={selectedPlace == index ? styles.placeSelected : styles.place}
+                  />
+                  <Text style={{ fontFamily: 'mon', paddingTop: 6 }}>{item.title}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>When's your trip?</Text>
+          <View style={styles.cardBody}>
+            <Text style={styles.previewdData}>Calendar preview is available on native app.</Text>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Who's coming?</Text>
+          <View style={styles.cardBody}>
+            {groups.map((item, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.guestItem,
+                  index + 1 < guestsGropus.length ? styles.itemBorder : null,
+                ]}>
+                <View>
+                  <Text style={{ fontFamily: 'mon-sb', fontSize: 14 }}>{item.name}</Text>
+                  <Text style={{ fontFamily: 'mon', fontSize: 14, color: Colors.grey }}>
+                    {item.text}
+                  </Text>
+                </View>
+
+                <View style={styles.counterRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const newGroups = [...groups];
+                      newGroups[index].count =
+                        newGroups[index].count > 0 ? newGroups[index].count - 1 : 0;
+                      setGroups(newGroups);
+                    }}>
+                    <Ionicons
+                      name="remove-circle-outline"
+                      size={26}
+                      color={groups[index].count > 0 ? Colors.grey : '#cdcdcd'}
+                    />
+                  </TouchableOpacity>
+                  <Text style={styles.counterText}>{item.count}</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const newGroups = [...groups];
+                      newGroups[index].count++;
+                      setGroups(newGroups);
+                    }}>
+                    <Ionicons name="add-circle-outline" size={26} color={Colors.grey} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={defaultStyles.footer}>
+        <View style={styles.footerRow}>
+          <TouchableOpacity style={{ height: '100%', justifyContent: 'center' }}>
+            <Text style={styles.clearAllText}>Clear all</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[defaultStyles.btn, { paddingRight: 20, paddingLeft: 50 }]}
+            onPress={() => router.back()}>
+            <Ionicons
+              name="search-outline"
+              size={24}
+              style={defaultStyles.btnIcon}
+              color={'#fff'}
+            />
+            <Text style={defaultStyles.btnText}>Search</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const BookingNativePage = () => {
+  const Animated = require('react-native-reanimated').default;
+  const { FadeIn, FadeOut, SlideInDown } = require('react-native-reanimated');
+  const { BlurView } = require('expo-blur');
+  const { TextInput } = require('react-native-gesture-handler');
+  const { TouchableOpacity } = require('@gorhom/bottom-sheet');
+  const DatePicker = require('react-native-modern-datepicker').default;
+
+  const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
   const [openCard, setOpenCard] = useState(0);
   const [selectedPlace, setSelectedPlace] = useState(0);
-
   const [groups, setGroups] = useState(guestsGropus);
   const router = useRouter();
   const today = new Date().toISOString().substring(0, 10);
@@ -52,7 +172,6 @@ const Page = () => {
 
   return (
     <BlurView intensity={70} style={styles.container} tint="light">
-      {/*  Where */}
       <View style={styles.card}>
         {openCard != 0 && (
           <AnimatedTouchableOpacity
@@ -95,7 +214,6 @@ const Page = () => {
         )}
       </View>
 
-      {/* When */}
       <View style={styles.card}>
         {openCard != 1 && (
           <AnimatedTouchableOpacity
@@ -127,7 +245,6 @@ const Page = () => {
         )}
       </View>
 
-      {/* Guests */}
       <View style={styles.card}>
         {openCard != 2 && (
           <AnimatedTouchableOpacity
@@ -158,13 +275,7 @@ const Page = () => {
                   </Text>
                 </View>
 
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    gap: 10,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
+                <View style={styles.counterRow}>
                   <TouchableOpacity
                     onPress={() => {
                       const newGroups = [...groups];
@@ -179,15 +290,7 @@ const Page = () => {
                       color={groups[index].count > 0 ? Colors.grey : '#cdcdcd'}
                     />
                   </TouchableOpacity>
-                  <Text
-                    style={{
-                      fontFamily: 'mon',
-                      fontSize: 16,
-                      minWidth: 18,
-                      textAlign: 'center',
-                    }}>
-                    {item.count}
-                  </Text>
+                  <Text style={styles.counterText}>{item.count}</Text>
                   <TouchableOpacity
                     onPress={() => {
                       const newGroups = [...groups];
@@ -203,21 +306,12 @@ const Page = () => {
         )}
       </View>
 
-      {/* Footer */}
       <Animated.View style={defaultStyles.footer} entering={SlideInDown.delay(200)}>
-        <View
-          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={styles.footerRow}>
           <TouchableOpacity
             style={{ height: '100%', justifyContent: 'center' }}
             onPress={onClearAll}>
-            <Text
-              style={{
-                fontSize: 18,
-                fontFamily: 'mon-sb',
-                textDecorationLine: 'underline',
-              }}>
-              Clear all
-            </Text>
+            <Text style={styles.clearAllText}>Clear all</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -270,7 +364,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
   },
-
   searchSection: {
     height: 50,
     flexDirection: 'row',
@@ -316,7 +409,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.dark,
   },
-
   guestItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -327,5 +419,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.grey,
   },
+  counterRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  counterText: {
+    fontFamily: 'mon',
+    fontSize: 16,
+    minWidth: 18,
+    textAlign: 'center',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  clearAllText: {
+    fontSize: 18,
+    fontFamily: 'mon-sb',
+    textDecorationLine: 'underline',
+  },
 });
+
 export default Page;

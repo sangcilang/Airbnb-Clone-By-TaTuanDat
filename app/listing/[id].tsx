@@ -1,49 +1,44 @@
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import React, { useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity, Share } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Dimensions,
+  TouchableOpacity,
+  Share,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import listingsData from '@/assets/data/airbnb-listings.json';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
-import Animated, {
-  SlideInDown,
-  interpolate,
-  useAnimatedRef,
-  useAnimatedStyle,
-  useScrollViewOffset,
-} from 'react-native-reanimated';
 import { defaultStyles } from '@/constants/Styles';
 
 const { width } = Dimensions.get('window');
 const IMG_HEIGHT = 300;
 
 const DetailsPage = () => {
-  const { id } = useLocalSearchParams();
-  const listing = (listingsData as any[]).find((item) => item.id === id);
-  const navigation = useNavigation();
-  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  if (Platform.OS === 'web') {
+    return <WebDetailsPage />;
+  }
 
-  const shareListing = async () => {
-    try {
-      await Share.share({
-        title: listing.name,
-        url: listing.listing_url,
-      });
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  return <NativeDetailsPage />;
+};
+
+const WebDetailsPage = () => {
+  const { id } = useLocalSearchParams();
+  const listing = (listingsData as any[]).find((item) => item.id === id) ?? (listingsData as any[])[0];
+  const navigation = useNavigation();
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
       headerTransparent: true,
-
-      headerBackground: () => (
-        <Animated.View style={[headerAnimatedStyle, styles.header]}></Animated.View>
-      ),
       headerRight: () => (
         <View style={styles.bar}>
-          <TouchableOpacity style={styles.roundButton} onPress={shareListing}>
+          <TouchableOpacity style={styles.roundButton}>
             <Ionicons name="share-outline" size={22} color={'#000'} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.roundButton}>
@@ -57,7 +52,86 @@ const DetailsPage = () => {
         </TouchableOpacity>
       ),
     });
-  }, []);
+  }, [navigation]);
+
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        <Image source={{ uri: listing.xl_picture_url }} style={styles.image} resizeMode="cover" />
+
+        <View style={styles.infoContainer}>
+          <Text style={styles.name}>{listing.name}</Text>
+          <Text style={styles.location}>
+            {listing.room_type} in {listing.smart_location}
+          </Text>
+          <Text style={styles.rooms}>
+            {listing.guests_included} guests · {listing.bedrooms} bedrooms · {listing.beds} bed ·{' '}
+            {listing.bathrooms} bathrooms
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            <Ionicons name="star" size={16} />
+            <Text style={styles.ratings}>
+              {listing.review_scores_rating / 20} · {listing.number_of_reviews} reviews
+            </Text>
+          </View>
+          <View style={styles.divider} />
+
+          <View style={styles.hostView}>
+            <Image source={{ uri: listing.host_picture_url }} style={styles.host} />
+
+            <View>
+              <Text style={{ fontWeight: '500', fontSize: 16 }}>Hosted by {listing.host_name}</Text>
+              <Text>Host since {listing.host_since}</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.description}>{listing.description}</Text>
+        </View>
+      </ScrollView>
+
+      <View style={defaultStyles.footer}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <TouchableOpacity style={styles.footerText}>
+            <Text style={styles.footerPrice}>EUR {listing.price}</Text>
+            <Text>night</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[defaultStyles.btn, { paddingRight: 20, paddingLeft: 20 }]}>
+            <Text style={defaultStyles.btnText}>Reserve</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const NativeDetailsPage = () => {
+  const Animated = require('react-native-reanimated').default;
+  const {
+    SlideInDown,
+    interpolate,
+    useAnimatedRef,
+    useAnimatedStyle,
+    useScrollViewOffset,
+  } = require('react-native-reanimated');
+
+  const { id } = useLocalSearchParams();
+  const listing = (listingsData as any[]).find((item) => item.id === id);
+  const navigation = useNavigation();
+  const scrollRef = useAnimatedRef<typeof Animated.ScrollView>();
+
+  const shareListing = async () => {
+    try {
+      await Share.share({
+        title: listing.name,
+        url: listing.listing_url,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   const scrollOffset = useScrollViewOffset(scrollRef);
 
@@ -83,6 +157,29 @@ const DetailsPage = () => {
       opacity: interpolate(scrollOffset.value, [0, IMG_HEIGHT / 1.5], [0, 1]),
     };
   }, []);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: '',
+      headerTransparent: true,
+      headerBackground: () => <Animated.View style={[headerAnimatedStyle, styles.header]} />,
+      headerRight: () => (
+        <View style={styles.bar}>
+          <TouchableOpacity style={styles.roundButton} onPress={shareListing}>
+            <Ionicons name="share-outline" size={22} color={'#000'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.roundButton}>
+            <Ionicons name="heart-outline" size={22} color={'#000'} />
+          </TouchableOpacity>
+        </View>
+      ),
+      headerLeft: () => (
+        <TouchableOpacity style={styles.roundButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color={'#000'} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, headerAnimatedStyle]);
 
   return (
     <View style={styles.container}>
@@ -129,10 +226,9 @@ const DetailsPage = () => {
       </Animated.ScrollView>
 
       <Animated.View style={defaultStyles.footer} entering={SlideInDown.delay(200)}>
-        <View
-          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <TouchableOpacity style={styles.footerText}>
-            <Text style={styles.footerPrice}>€{listing.price}</Text>
+            <Text style={styles.footerPrice}>EUR {listing.price}</Text>
             <Text>night</Text>
           </TouchableOpacity>
 
@@ -226,7 +322,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: Colors.grey,
   },
-
   description: {
     fontSize: 16,
     marginTop: 10,

@@ -3,7 +3,6 @@ import { useRef, useState } from 'react';
 import Colors from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
 
 const categories = [
@@ -52,7 +51,12 @@ const ExploreHeader = ({ onCategoryChanged }: Props) => {
     selected?.measure((x) => {
       scrollRef.current?.scrollTo({ x: x - 16, y: 0, animated: true });
     });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const Haptics = require('expo-haptics');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      // Ignore haptics when the platform does not support it.
+    }
     onCategoryChanged(categories[index].name);
   };
 

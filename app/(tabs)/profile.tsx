@@ -9,14 +9,26 @@ import {
   TextInput,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { useAuth, useUser } from '@clerk/clerk-expo';
 import { defaultStyles } from '@/constants/Styles';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { Link } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
+
+const HAS_VALID_CLERK_KEY = /^pk_(test|live)_[A-Za-z0-9]+$/.test(
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
+);
 
 const Page = () => {
+  if (!HAS_VALID_CLERK_KEY) {
+    return <ProfileUnavailable />;
+  }
+
+  return <ProfileWithClerk />;
+};
+
+const ProfileWithClerk = () => {
+  const { useAuth, useUser } = require('@clerk/clerk-expo');
+  const ImagePicker = require('expo-image-picker');
   const { signOut, isSignedIn } = useAuth();
   const { user } = useUser();
   const [firstName, setFirstName] = useState(user?.firstName);
@@ -121,6 +133,26 @@ const Page = () => {
           <Button title="Log In" color={Colors.dark} />
         </Link>
       )}
+    </SafeAreaView>
+  );
+};
+
+const ProfileUnavailable = () => {
+  return (
+    <SafeAreaView style={defaultStyles.container}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Profile</Text>
+        <Ionicons name="notifications-outline" size={26} />
+      </View>
+      <View style={styles.card}>
+        <Text style={{ fontFamily: 'mon-b', fontSize: 22 }}>Demo profile</Text>
+        <Text style={{ fontFamily: 'mon', color: Colors.grey, textAlign: 'center' }}>
+          Add a valid `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` to test account features on web.
+        </Text>
+      </View>
+      <Link href={'/(modals)/login'} asChild>
+        <Button title="Open Login Demo" color={Colors.dark} />
+      </Link>
     </SafeAreaView>
   );
 };
